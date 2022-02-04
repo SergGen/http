@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="data:image/x-icon" type="image/x-icon">
+    <title>Document</title>
+</head>
+<body>
+<a href="http://localhost:8000">Home</a><br>
+<a href="http://localhost:8000/auth" id="auth">AUTH</a><br>
+<a href="http://localhost:8000/post" id="post">POST</a><br>
+<a href="http://localhost:8000/delete" id="delete">DELETE</a><br>
+<h4 id="login_status">No authorization</h4>
+<label for="login" id="login_label">Login</label><br><input type="text" id="login"><br>
+<label for="pwd" id="pwd_label">Password</label><br><input type="password" id="pwd"><br>
+<label for="file_name" id="file_name_label">File name</label><br><input type="text" id="file_name"><br>
+<label for="content" id="content_label">Content</label><br><input type="text" id="content"><br>
+<button id="enter">Enter</button><br>
+<button id="logout">Logout</button><br>
+<button id="post_btn">Send POST request</button><br>
+<button id="delete_btn">Send DELETE request</button><br>
+<h4 id="success_login">You logged successful</h4>
+<h4 id="reject_login">Wrong login or password</h4>
+<p id="files"></p>
+
+<script>
+    'use strict';
+    window.onload = () => {
+        const SITE_ADDRESS = 'http://localhost:8000';
+        const login = document.querySelector('#login');
+        const pwd = document.querySelector('#pwd');
+        const loginLabel = document.querySelector('#login_label');
+        const pwdLabel = document.querySelector('#pwd_label');
+        const enterBtn = document.querySelector('#enter');
+        const logoutBtn = document.querySelector('#logout');
+        const loginStatus = document.querySelector('#login_status');
+        const successLogin = document.querySelector('#success_login');
+        const rejectLogin = document.querySelector('#reject_login');
+
+        const fileNameLabel = document.querySelector('#file_name_label');
+        const fileName = document.querySelector('#file_name');
+        const contentLabel = document.querySelector('#content_label');
+        const content = document.querySelector('#content');
+        const postBtn = document.querySelector('#post_btn');
+
+        const deleteBtn = document.querySelector('#delete_btn');
+
+        const files = document.querySelector('#files');
+
+        let currentID = null;
+        const dataSend = {
+            login: '',
+            pwd: '',
+            fileName: '',
+            content: ''
+        }
+
+        successLogin.hidden = true;
+        rejectLogin.hidden = true;
+        enterBtn.disabled = true;
+        logoutBtn.disabled = true;
+        postBtn.disabled = true;
+        deleteBtn.disabled = true;
+
+        if(document.location.pathname === '/auth'){
+            login.hidden = false;
+            loginLabel.hidden = false;
+            pwd.hidden = false;
+            pwdLabel.hidden = false;
+            enterBtn.hidden = false;
+            logoutBtn.hidden = false;
+            fileNameLabel.hidden = true;
+            fileName.hidden = true;
+            contentLabel.hidden = true;
+            content.hidden = true;
+            postBtn.hidden = true;
+            deleteBtn.hidden = true;
+        } else if(document.location.pathname === '/post'){
+            login.hidden = true;
+            loginLabel.hidden = true;
+            pwd.hidden = true;
+            pwdLabel.hidden = true;
+            enterBtn.hidden = true;
+            logoutBtn.hidden = true;
+            fileNameLabel.hidden = false;
+            fileName.hidden = false;
+            contentLabel.hidden = false;
+            content.hidden = false;
+            postBtn.hidden = false;
+            deleteBtn.hidden = true;
+        } else if(document.location.pathname === '/delete'){
+            login.hidden = true;
+            loginLabel.hidden = true;
+            pwd.hidden = true;
+            pwdLabel.hidden = true;
+            enterBtn.hidden = true;
+            logoutBtn.hidden = true;
+            fileNameLabel.hidden = false;
+            fileName.hidden = false;
+            contentLabel.hidden = true;
+            content.hidden = true;
+            postBtn.hidden = true;
+            deleteBtn.hidden = false;
+        } else {
+            login.hidden = true;
+            loginLabel.hidden = true;
+            pwd.hidden = true;
+            pwdLabel.hidden = true;
+            enterBtn.hidden = true;
+            logoutBtn.hidden = true;
+            fileNameLabel.hidden = true;
+            fileName.hidden = true;
+            contentLabel.hidden = true;
+            content.hidden = true;
+            postBtn.hidden = true;
+            deleteBtn.hidden = true;
+        }
+
+        const setUI_profile = (status) => {
+            if (status === 200) {
+                login.disabled = true;
+                pwd.disabled = true;
+                enterBtn.disabled = true;
+                logoutBtn.disabled = false;
+                successLogin.hidden = false;
+                rejectLogin.hidden = true;
+                postBtn.disabled = false;
+                deleteBtn.disabled = false;
+                fileName.disabled = false;
+                content.disabled = false;
+                loginStatus.innerText = `Your authorization ID: ${currentID}`;
+            } else if(status === 401) {
+                login.disabled = false;
+                pwd.disabled = false;
+                logoutBtn.disabled = true;
+                successLogin.hidden = true;
+                rejectLogin.hidden = true;
+                postBtn.disabled = true;
+                deleteBtn.disabled = true;
+                fileName.disabled = true;
+                content.disabled = true;
+                loginStatus.innerText = `No authorization`;
+                currentID = null;
+            } else if(status === 400) {
+                enterBtn.disabled = true;
+                successLogin.hidden = true;
+                rejectLogin.hidden = false;
+            } else {
+                console.log(status);
+                throw new Error('setUI_profile() status err');
+            }
+        }
+
+        const catchLoginStatus = async () => {
+            let result = {};
+            let response = await fetch(SITE_ADDRESS, { method: 'PATCH' });
+            if(response.status === 200) {
+                result = await response.json();
+                currentID = result.id;
+                console.log(currentID);
+                setUI_profile(response.status);
+            } else if (response.status === 401) {
+                currentID = null;
+                setUI_profile(response.status);
+            }
+        }
+        catchLoginStatus();
+
+        login.addEventListener('input', () => {
+            dataSend.login = login.value.trim();
+            enterBtn.disabled = (login.value.trim().length === 0 || pwd.value.trim().length === 0);
+        });
+
+        pwd.addEventListener('input', () => {
+            dataSend.pwd = pwd.value.trim();
+            enterBtn.disabled = (login.value.trim().length === 0 || pwd.value.trim().length === 0);
+        });
+
+        fileName.addEventListener('input', () => {
+            dataSend.fileName = fileName.value.trim();
+            postBtn.disabled = (fileName.value.trim().length === 0 || content.value.trim().length === 0);
+            deleteBtn.disabled = fileName.value.trim().length === 0;
+        });
+
+        content.addEventListener('input', () => {
+            dataSend.content = content.value.trim();
+            postBtn.disabled = (fileName.value.trim().length === 0 || content.value.trim().length === 0);
+        });
+
+
+        const sendRequest = (method, headers = {}, data = {}) => async () => {
+            let result = null;
+            let preparedData = JSON.stringify(data);
+            let response = await fetch(document.location.href, {
+                method: method,
+                headers: headers,
+                body: preparedData
+            });
+
+            if(response.status === 200) {
+                result = await response.json();
+                currentID = result.id;
+                setUI_profile(response.status);
+            } else if (response.status === 400 || response.status === 401) {
+                setUI_profile(response.status);
+            } else {
+                console.log(response.status);
+            }
+            login.value = '';
+            pwd.value = '';
+            fileName.value = '';
+            content.value = '';
+            dataSend.login = '';
+            dataSend.pwd = '';
+            dataSend.fileName = '';
+            dataSend.content = '';
+        }
+
+        postBtn.addEventListener('click', sendRequest('POST', {'Content-Type': 'application/json'}, dataSend));
+        deleteBtn.addEventListener('click', sendRequest('DELETE', {'Content-Type': 'application/json'}, dataSend));
+
+        ///TODO Подумать как использовать ссылочный тип данных в авторизации при передаче логина/пароля
+        enterBtn.addEventListener('click', sendRequest('POST', {'Content-Type': 'application/json',
+            'authorization': 'Basic' + `${btoa(`${dataSend.login}:${dataSend.pwd}`)}`}, dataSend));
+
+        logoutBtn.addEventListener('click', sendRequest('DELETE'));
+    };
+</script>
+</body>
+</html>
